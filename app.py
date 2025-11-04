@@ -4,7 +4,7 @@ import torchvision
 from PIL import Image
 from torchvision import transforms as T
 import numpy as np
-
+import cv2
 import random
 import os
 import requests  # Added for downloading the model
@@ -79,7 +79,9 @@ def load_model(model_url, local_path):
 
     try:
         # Load the custom weights (state dictionary)
-        model.load_state_dict(torch.load(local_path, map_location=DEVICE))
+        # We explicitly set weights_only=False as per the error message.
+        # This is required for models saved with older PyTorch versions.
+        model.load_state_dict(torch.load(local_path, map_location=DEVICE, weights_only=False))
     except Exception as e:
         st.error(f"Error loading model weights: {e}")
         st.warning("This can happen if your custom model's architecture (e.g., number of classes) "
@@ -202,4 +204,5 @@ if uploaded_file is not None:
     with st.spinner("Detecting objects..."):
         segmented_img = instance_segmentation_image(image, threshold=threshold)
         st.image(segmented_img, caption="Segmented Image.", use_column_width=True)
+
 
