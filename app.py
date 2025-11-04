@@ -4,7 +4,7 @@ import torchvision
 from PIL import Image
 from torchvision import transforms as T
 import numpy as np
-
+import cv2
 import random
 import os
 import requests  # Added for downloading the model
@@ -43,33 +43,78 @@ COCO_INSTANCE_CATEGORY_NAMES = [
 # --- End Configuration ---
 
 
+def download_file_from_google_drive(file_id, destination):
+    """
+    Downloads a file from Google Drive, handling large file confirmation.
+    """
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    # Get initial response
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    
+    # Try to get confirmation token
+    token = None
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            token = value
+            break
+            
+    if token:
+        # If token found, make a second request with confirmation
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+    
+    # Check response status
+    response.raise_for_status()
+
+    # Now, save the file
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(chunk_size=32768):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+
+
 @st.cache_resource  # Cache the model to avoid reloading on each interaction
 def load_model(model_url, local_path):
     """
     Downloads the custom model from a URL if not present locally,
     then loads it from the local file path.
     """
+    # Extract the file ID from the URL
+    file_id = model_url.split('id=')[-1]
+    
     # Check if the model file exists locally
     if not os.path.exists(local_path):
-        st.info(f"Downloading model from URL... This may take a moment.")
+        st.info(f"Downloading model from Google Drive... This may take a moment.")
         try:
-            # Use requests to download the file
-            response = requests.get(model_url, stream=True)
-            response.raise_for_status()  # Raise an error for bad responses (4xx or 5xx)
-
-            # Write the file to the local path
-            with open(local_path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:  # filter out keep-alive new chunks
-                        f.write(chunk)
+            # Use the helper function to download
+            download_file_from_google_drive(file_id, local_path)
             st.success(f"Model downloaded and saved to '{local_path}'.")
 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             st.error(f"Error downloading model: {e}")
-            st.info("Please check the MODEL_URL or your internet connection.")
+            st.info("Please check the MODEL_URL, your internet connection, or the file's sharing settings on Google Drive.")
             st.stop()
 
     # --- Load the model from the local file ---
+    
+    # Verify that the downloaded file is not an HTML error page
+    try:
+        # Quick check: try to read the first few bytes.
+        # An HTML file often starts with '<'.
+        with open(local_path, 'rb') as f:
+            start_bytes = f.read(10) # Read first 10 bytes
+            if start_bytes.strip().startswith(b'<'):
+                raise Exception("Downloaded file is an HTML page, not a model. This often means Google Drive sharing settings are wrong.")
+    except Exception as e:
+        st.error(f"Error reading model file: {e}")
+        st.info(f"The file at '{local_path}' is not a valid model. Deleting it now.")
+        os.remove(local_path) # Delete the bad file
+        st.info("Please re-run the app to try downloading again. If this persists, check the file's sharing settings in Google Drive.")
+        st.stop()
+
 
     # Instantiate the model architecture.
     # We use pretrained=False because we are about to load our own weights.
@@ -206,3 +251,6 @@ if uploaded_file is not None:
         st.image(segmented_img, caption="Segmented Image.", use_column_width=True)
 
 
+Error loading model weights: invalid load key, '<'.
+
+This can happen if your custom model's architecture (e.g., number of classes) doesn't match the default 'maskrcnn_resnet50_fpn' used here. If so, you must update the model creation code inside 'load_model()'
