@@ -4,7 +4,7 @@ import torchvision
 from PIL import Image
 from torchvision import transforms as T
 import numpy as np
-import cv2
+
 import random
 import os
 import requests  # Added for downloading the model
