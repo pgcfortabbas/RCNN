@@ -1,6 +1,7 @@
 streamlit
 torch
 torchvision
-Pillow
 numpy
-opencv-python
+opencv-python-headless # Essential for the cv2 import
+Pillow
+requests
