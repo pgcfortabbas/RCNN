@@ -225,7 +225,7 @@ def instance_segmentation_image(img, threshold=0.5, rect_th=3, text_size=1, text
         label = pred_cls[i]
         cv2.putText(img_np, label, pt1, cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0), thickness=text_th)
 
-    return cv2.cvtColor(img_np, cv2.COLOR_BGR_RGB)  # Convert back to RGB for Streamlit
+    return cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)  # Convert back to RGB for Streamlit
 
 
 # --- Streamlit App UI ---
@@ -249,8 +249,3 @@ if uploaded_file is not None:
     with st.spinner("Detecting objects..."):
         segmented_img = instance_segmentation_image(image, threshold=threshold)
         st.image(segmented_img, caption="Segmented Image.", use_column_width=True)
-
-
-Error loading model weights: invalid load key, '<'.
-
-This can happen if your custom model's architecture (e.g., number of classes) doesn't match the default 'maskrcnn_resnet50_fpn' used here. If so, you must update the model creation code inside 'load_model()'
