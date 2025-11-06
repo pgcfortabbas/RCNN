@@ -14,7 +14,7 @@ import requests  # Added for downloading the model
 
 # 1. DEFINE MODEL URL:
 #    This is the direct download link for your model.
-MODEL_URL = "https://drive.google.com/file/d/1wwApqBN11F_-JY7DlWxl6V0xgnZFC7ml/view?usp=sharing"
+MODEL_URL = "https://drive.google.com/file/d/1wwApqBN11F_-JY7DlWxl6V0xgnZFC7ml/view?usp=drive_link"
 #    The script will download the model to this local file path:
 LOCAL_MODEL_PATH = "maskrcnn_model.pth"
 
